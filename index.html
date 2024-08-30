@@ -1,0 +1,244 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <style>
+      /* Vercel Modern Theme */
+      *,
+      *::before,
+      *::after {
+        font-family: inherit;
+        margin: 0;
+        box-sizing: border-box;
+      }
+
+      html,
+      body {
+        min-height: 100%;
+        width: 100%;
+      }
+
+      img {
+        display: block;
+      }
+
+      input[type="file"] {
+        display: none;
+      }
+
+      body {
+        font-family: "Inter", sans-serif;
+        font-size: 16px;
+
+        line-height: 1.5;
+        color: #333;
+        background-color: #f9f9f9;
+        margin: 0;
+
+        padding: 1rem;
+
+        display: flex;
+        flex-direction: column;
+        align-items: center;
+
+        gap: 1rem;
+
+        line-height: 1.5;
+      }
+
+      a {
+        color: #0070f3;
+        text-decoration: none;
+      }
+
+      a:hover {
+        text-decoration: underline;
+      }
+
+      h1,
+      h2,
+      h3,
+      h4 {
+        margin: 0;
+        font-weight: 600;
+      }
+
+      h1 {
+        font-size: 2.5rem;
+        text-align: center;
+
+        font-weight: 300;
+      }
+
+      h1 strong {
+        font-weight: 500;
+      }
+
+      h2 {
+        font-size: 1.5rem;
+        text-align: center;
+        padding: 0 1rem;
+      }
+
+      button,
+      input[type="submit"],
+      input[type="file"] + label {
+        cursor: pointer;
+        border: none;
+        background-color: #444;
+        color: #fff;
+        padding: 0.5rem 1rem;
+        border-radius: 0.25rem;
+        font-size: 1rem;
+        transition: background-color 0.2s;
+      }
+
+      form {
+        display: grid;
+        place-items: center;
+        gap: 1rem;
+
+        width: 100%;
+        max-width: 42rem;
+      }
+
+      ul {
+        list-style: none;
+        padding: 0;
+        margin: 0;
+
+        display: flex;
+        flex-direction: column;
+
+        background: #fff;
+        border: 1px solid #ddd;
+        border-radius: 0.25rem;
+
+        box-shadow: 0 0 1rem rgba(0, 0, 0, 0.075);
+
+        width: 100%;
+        max-width: 42rem;
+      }
+
+      ul:empty {
+        display: none;
+      }
+
+      li {
+        display: grid;
+        padding: 0.5rem 1rem;
+      }
+
+      li:not(:last-child) {
+        border-bottom: 1px solid #ddd;
+      }
+
+      li a {
+        color: #444;
+      }
+
+      #status:empty {
+        display: none;
+      }
+    </style>
+    <title>μploader</title>
+  </head>
+  <body>
+    <h1>⚡<br /><strong>μ</strong>ploader</h1>
+    <form enctype="multipart/form-data" action="/" method="post">
+      <input type="file" id="file-input" name="files" multiple />
+      <label for="file-input">Select Files</label>
+      <div id="status"></div>
+      <ul id="selected-files"></ul>
+      <input type="submit" value="Upload" />
+      <progress id="progress-bar" value="0" max="100"></progress>
+    </form>
+
+    <h2>Recent Uploads</h2>
+    <ul id="recent-uploads">
+      .Uploads
+    </ul>
+
+    <script>
+      const $fileInput = document.querySelector("#file-input");
+
+      const $status = document.querySelector("#status");
+      const $selectedFiles = document.querySelector("#selected-files");
+      const $recentUploads = document.querySelector("#recent-uploads");
+
+      const $form = document.querySelector("form");
+      const $progress = document.querySelector("#progress-bar");
+
+      function updateRecentUploads() {
+        fetch("/uploads")
+          .then((response) => response.json())
+          .then((data) => {
+            $recentUploads.innerHTML = "";
+
+            for (const upload of data) {
+              const $li = document.createElement("li");
+              const $a = document.createElement("a");
+              $a.href = `/uploads/${upload}`;
+              $a.textContent = upload;
+              $li.appendChild($a);
+              $recentUploads.appendChild($li);
+            }
+          });
+      }
+
+      $fileInput.addEventListener("change", (e) => {
+        $status.textContent = `${$fileInput.files.length} file(s) selected`;
+        $selectedFiles.innerHTML = "";
+
+        for (const file of $fileInput.files) {
+          const $li = document.createElement("li");
+          $li.textContent = file.name;
+          $selectedFiles.appendChild($li);
+        }
+      });
+
+      $form.addEventListener("submit", (e) => {
+        e.preventDefault();
+
+        const formData = new FormData($form);
+
+        if (formData.get("files").size === 0) {
+          $status.textContent = "No files selected";
+          return;
+        }
+
+        const xhr = new XMLHttpRequest();
+        xhr.open("POST", "/upload", true);
+
+        xhr.upload.addEventListener("progress", (e) => {
+          const percent = (e.loaded / e.total) * 100;
+          $progress.value = percent;
+        });
+
+        xhr.upload.addEventListener("load", () => {
+          $progress.value = 100;
+        });
+
+        xhr.upload.addEventListener("error", () => {
+          $progress.value = 0;
+        });
+
+        xhr.addEventListener("load", () => {
+          if (xhr.status === 200) {
+            $status.textContent = "Upload complete";
+            $fileInput.value = "";
+            $selectedFiles.innerHTML = "";
+            $progress.value = 0;
+
+            updateRecentUploads();
+          } else {
+            $status.textContent = "Upload failed";
+          }
+        });
+
+        xhr.send(formData);
+      });
+    </script>
+  </body>
+</html>
