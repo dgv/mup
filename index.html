@@ -4,11 +4,13 @@
     <meta charset="UTF-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
     <style>
-      /* Vercel Modern Theme */
+      @import url("https://fonts.googleapis.com/css2?family=Inter:ital,opsz,wght@0,14..32,100..900;1,14..32,100..900&display=swap");
+      @import url("https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:opsz,wght,FILL,GRAD@20..48,100..700,0..1,-50..200");
+
       *,
       *::before,
       *::after {
-        font-family: inherit;
+        font: inherit;
         margin: 0;
         box-sizing: border-box;
       }
@@ -29,6 +31,7 @@
 
       body {
         font-family: "Inter", sans-serif;
+        font-optical-sizing: auto;
         font-size: 16px;
 
         line-height: 1.5;
@@ -45,6 +48,15 @@
         gap: 1rem;
 
         line-height: 1.5;
+      }
+
+      .material-symbols-outlined {
+        font-variation-settings:
+          "FILL" 0,
+          "wght" 500,
+          "GRAD" 0,
+          "opsz" 20;
+        font-size: 20px;
       }
 
       a {
@@ -86,12 +98,36 @@
       input[type="file"] + label {
         cursor: pointer;
         border: none;
-        background-color: #444;
+        background: #444;
         color: #fff;
         padding: 0.5rem 1rem;
         border-radius: 0.25rem;
-        font-size: 1rem;
-        transition: background-color 0.2s;
+        font-size: 16px;
+
+        line-height: 1.25;
+
+        transition: background 64ms;
+
+        &:hover {
+          background: #606060;
+        }
+
+        &.danger {
+          background: #c40909;
+
+          &:hover {
+            background: #e71d1d;
+          }
+        }
+
+        &.icon {
+          padding: 0;
+          display: grid;
+          place-content: center;
+
+          width: 1.5rem;
+          height: 1.5rem;
+        }
       }
 
       form {
@@ -127,7 +163,12 @@
 
       li {
         display: grid;
-        padding: 0.5rem 1rem;
+        align-items: center;
+
+        word-break: break-all;
+        word-break: break-word;
+
+        padding: 0.5rem;
       }
 
       li:not(:last-child) {
@@ -140,6 +181,11 @@
 
       #status:empty {
         display: none;
+      }
+
+      #recent-uploads li {
+        grid-template-columns: 1fr auto;
+        gap: 0.5rem;
       }
     </style>
     <title>μploader</title>
@@ -165,10 +211,27 @@
 
       const $status = document.querySelector("#status");
       const $selectedFiles = document.querySelector("#selected-files");
-      const $recentUploads = document.querySelector("#recent-uploads");
 
       const $form = document.querySelector("form");
       const $progress = document.querySelector("#progress-bar");
+
+      const $recentUploads = document.querySelector("#recent-uploads");
+
+      function onDeleteFile(e) {
+        const filename = e.target.closest("li").dataset.filename;
+
+        fetch(`/uploads/${filename}`, { method: "DELETE" }).then((response) => {
+          if (response.ok) {
+            updateRecentUploads();
+          }
+        });
+      }
+
+      // Mount event listeners after load
+      $recentUploads.querySelectorAll("li .buttons").forEach(($buttons) => {
+        const [$deleteButton] = $buttons.children;
+        $deleteButton.addEventListener("click", onDeleteFile);
+      });
 
       function updateRecentUploads() {
         fetch("/uploads")
@@ -178,10 +241,26 @@
 
             for (const upload of data) {
               const $li = document.createElement("li");
+              $li.dataset.filename = upload;
+
               const $a = document.createElement("a");
               $a.href = `/uploads/${upload}`;
               $a.textContent = upload;
+
+              const $buttons = document.createElement("div");
+              $buttons.classList.add("buttons");
+
+              const $deleteButton = document.createElement("button");
+              $deleteButton.title = "Delete";
+              $deleteButton.classList.add("danger", "icon");
+              $deleteButton.innerHTML =
+                '<span class="material-symbols-outlined">delete</span>';
+              $deleteButton.addEventListener("click", onDeleteFile);
+              $buttons.appendChild($deleteButton);
+
               $li.appendChild($a);
+              $li.appendChild($buttons);
+
               $recentUploads.appendChild($li);
             }
           });

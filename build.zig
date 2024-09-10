@@ -18,7 +18,7 @@ pub fn build(b: *std.Build) void {
     const target = b.standardTargetOptions(.{});
 
     const optimize = b.standardOptimizeOption(
-        .{ .preferred_optimize_mode = .ReleaseSafe },
+        .{ .preferred_optimize_mode = .ReleaseSmall },
     );
     // for (TARGETS) |TARGET| {
     //     const target = b.resolveTargetQuery(TARGET);
