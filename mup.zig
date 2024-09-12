@@ -9,16 +9,13 @@ var upload_dir: []const u8 = undefined;
 var max_size: usize = undefined;
 var gpa = std.heap.GeneralPurposeAllocator(.{}){};
 const allocator = gpa.allocator();
-var files_list_cache = std.ArrayList(string).init(allocator);
 
 pub fn main() !void {
-    //var gpa = std.heap.GeneralPurposeAllocator(.{}){};
-    defer files_list_cache.deinit();
     const params = comptime clap.parseParamsComptime(
         \\-h, --help             Display this help and exit.
         \\-s, --size <usize>   Maximum upload size in MB.
         \\-p, --port <u16>  Port to run the server on.
-        \\-h, --host <str>  Host to run the server on.
+        \\-a, --addr <str>  Address to run the server on.
         \\-d, --dir <str>  Upload directory to serve files.
         \\
     );
@@ -31,10 +28,10 @@ pub fn main() !void {
         return clap.help(std.io.getStdErr().writer(), clap.Help, &params, .{});
     max_size = res.args.size orelse 100;
     const port = res.args.port orelse 5000;
-    const host = res.args.host orelse "0.0.0.0";
+    const addr = res.args.addr orelse "0.0.0.0";
     upload_dir = try std.mem.join(gpa.allocator(), "", &.{ res.args.dir orelse "./uploads", "/" });
 
-    _ = std.fs.cwd().openDir(upload_dir, .{ .iterate = true }) catch |err| switch (err) {
+    _ = std.fs.cwd().statFile(upload_dir) catch |err| switch (err) {
         error.FileNotFound => {
             try std.fs.cwd().makeDir(upload_dir);
             _ = try std.fs.cwd().openDir(upload_dir, .{ .iterate = true });
@@ -46,7 +43,7 @@ pub fn main() !void {
     };
 
     var server = try httpz.Server().init(gpa.allocator(), .{
-        .address = host,
+        .address = addr,
         .port = port,
         .request = .{
             .max_body_size = max_size * MB,
@@ -62,7 +59,7 @@ pub fn main() !void {
     router.get("/metrics", metrics);
     router.delete("/uploads/:filename", delete);
 
-    std.log.info("listening at http://{s}:{d}/", .{ host, port });
+    std.log.info("listening at http://{s}:{d}/", .{ addr, port });
     try server.listen();
 }
 
@@ -70,8 +67,8 @@ fn index(req: *httpz.Request, res: *httpz.Response) !void {
     std.log.info("{any} {s} from {any} ", .{ req.method, req.url.raw, req.address });
     var files_list_html = std.ArrayList(string).init(allocator);
     defer files_list_html.deinit();
-    try getUploads();
-    for (files_list_cache.items) |file| {
+    const files_list = try getUploads();
+    for (files_list) |file| {
         const html = try std.fmt.allocPrint(
             std.heap.page_allocator,
             "<li data-filename=\"{s}\"><a href=\"/uploads/{s}\">{s}</a><div class=\"buttons\"><button title=\"Delete file\" class=\"danger icon\"><span class=\"material-symbols-outlined\">delete</span></button></div></li>",
@@ -105,8 +102,8 @@ fn serve(req: *httpz.Request, res: *httpz.Response) !void {
 
 fn uploads(req: *httpz.Request, res: *httpz.Response) !void {
     std.log.info("{any} {s} from {any} ", .{ req.method, req.url.raw, req.address });
-    try getUploads();
-    try res.json(files_list_cache.items, .{});
+    const files_list = try getUploads();
+    try res.json(files_list, .{});
 }
 
 fn upload(req: *httpz.Request, res: *httpz.Response) !void {
@@ -137,7 +134,7 @@ fn delete(req: *httpz.Request, res: *httpz.Response) !void {
     const filename = req.param("filename").?;
     const filename_path = try std.mem.join(allocator, "", &.{ upload_dir, filename });
     std.fs.cwd().deleteFile(filename_path) catch |err| {
-        std.log.err("delete err: {any}", .{err});
+        std.log.err("delete() err: {any}", .{err});
         res.status = 404;
         res.body = "Not found";
         return;
@@ -160,14 +157,16 @@ fn filenameToSlug(filename: string) !string {
     return _filename.items;
 }
 
-fn getUploads() !void {
-    _ = try files_list_cache.toOwnedSlice();
+fn getUploads() ![]string {
+    var files_list = std.ArrayList(string).init(allocator);
     var dir = try std.fs.cwd().openDir(upload_dir, .{ .iterate = true });
+    defer dir.close();
     var it = dir.iterate();
     while (try it.next()) |file| {
         if (file.kind != .file) {
             continue;
         }
-        try files_list_cache.append(file.name);
+        try files_list.append(try allocator.dupe(u8, file.name));
     }
+    return files_list.items;
 }

@@ -18,12 +18,12 @@ _Sometimes I want to move files between my pc and a device I do not own that has
 _size comparison_
 ```bash
 # go binary striping symbol and debug info..tinygo?
-$ go build -ldflags "-s -w" ; du mup
+$ go build -ldflags "-s -w"; du mup
 16704	mup
 ...
-# zig binary -67x
+# zig binary -65x
 $ zig build --release=small; du zig-out/bin/mup
-248	zig-out/bin/mup
+256	zig-out/bin/mup
 ```
 
 
