@@ -54,18 +54,18 @@ $ docker run -p 5000:5000 -v $PWD/uploads:/uploads mup
 
 ```bash
 $ mup --help
--h, --help
-        Display this help and exit.
+    -h, --help
+            Display this help and exit.
 
--s, --size <usize>
-        Maximum upload size in MB.
+    -s, --size <usize>
+            Maximum upload size in MB.
 
--p, --port <u16>
-        Port to run the server on.
+    -p, --port <u16>
+            Port to run the server on.
 
--h, --host <str>
-        Host to run the server on.
+    -a, --addr <str>
+            Address to run the server on.
 
--d, --dir <str>
-        Upload directory to serve files.
+    -d, --dir <str>
+            Upload directory to serve files.
 ```
