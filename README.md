@@ -1,6 +1,6 @@
 # μploader - Micro Uploader
-[![reference Zig](https://img.shields.io/badge/zig%20-0.13.0-orange)](https://github.com/dgv/mup/blob/main/build.zig.zon)
-[![reference Zig](https://img.shields.io/badge/deps%20-2-orange)](https://github.com/dgv/mup/blob/main/build.zig.zon)
+[![reference Zig](https://img.shields.io/badge/0.13.0-orange?style=flat&logo=zig&label=Zig&color=%23eba742)](https://github.com/dgv/mup/blob/main/build.zig.zon)
+[![reference Zig](https://img.shields.io/badge/deps%20-2-orange?color=%23eba742)](https://github.com/dgv/mup/blob/main/build.zig.zon)
 [![build](https://github.com/dgv/mup/actions/workflows/build.yml/badge.svg)](https://github.com/dgv/mup/actions/workflows/build.yml)
 [![License: MIT](https://img.shields.io/badge/license-MIT-yellow.svg)](https://opensource.org/licenses/MIT)
 
